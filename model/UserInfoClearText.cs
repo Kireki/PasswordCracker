@@ -5,10 +5,16 @@ namespace PasswordCrackerService.model
     /// <summary>
     /// Username + password in clear text (that is human readable)
     /// </summary>
+    [Serializable]
     public class UserInfoClearText
     {
         public String UserName { get; set; }
         public String Password { get; set; }
+
+        public UserInfoClearText()
+        {
+            
+        }
 
         public UserInfoClearText(string username, string password)
         {
