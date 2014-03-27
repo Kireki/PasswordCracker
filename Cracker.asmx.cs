@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.ServiceModel;
-using System.Threading.Tasks;
 using System.Web.Services;
 using log4net;
 using PasswordCrackerService.model;
@@ -110,14 +107,14 @@ namespace PasswordCrackerService
         [WebMethod]
         public DictionaryChunk GetDictionaryChunk()
         {
-            foreach (DictionaryChunk dictionaryChunk in Chunks)
+            DictionaryChunk chunk;
+            if (Chunks.TryTake(out chunk))
             {
-                if (!dictionaryChunk.GivenAway)
-                {
-                    dictionaryChunk.GivenAway = true;
-                    return dictionaryChunk;
-                }
+                log.Info("Got a chunk. Wordcount: " + chunk.Words.Count + "First Word: " + chunk.Words[0] + " Last word: " + chunk.Words[chunk.Words.Count - 1] + ".");
+                return chunk;
             }
+            log.Info("Got null.");
+            return null;
         }
 
         [WebMethod]
@@ -125,7 +122,7 @@ namespace PasswordCrackerService
         {
             foreach (DictionaryChunk dictionaryChunk in Chunks)
             {
-                log.Info("Count: " + dictionaryChunk.Words.Count + " Last: " + dictionaryChunk.Words[dictionaryChunk.Words.Count - 1]);
+                log.Info("Count: " + dictionaryChunk.Words.Count + " Last: " + dictionaryChunk.Words[dictionaryChunk.Words.Count - 1] + ".");
             }
         }
         
