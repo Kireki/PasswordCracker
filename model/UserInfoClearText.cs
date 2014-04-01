@@ -13,7 +13,7 @@ namespace PasswordCrackerService.model
 
         public UserInfoClearText()
         {
-            
+            //empty;
         }
 
         public UserInfoClearText(string username, string password)

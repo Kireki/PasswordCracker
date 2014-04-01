@@ -11,40 +11,28 @@ using PasswordCrackerService.util;
 namespace PasswordCrackerService
 {
     /// <summary>
-    /// Summary description for Cracker
+    /// A password cracking webservice that uses a dictionary and common variations
     /// </summary>
-    [WebService(Namespace = "http://tempuri.org/")]
+    [WebService(Namespace = "http://localhost:65080")]
     [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
     [System.ComponentModel.ToolboxItem(false)]
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Single)]
-    // To allow this Web Service to be called from script, using ASP.NET AJAX, uncomment the following line. 
-    // [System.Web.Script.Services.ScriptService]
     public class Cracker : WebService
     {
-        private static readonly ILog log;
-        private static List<UserInfoClearText> _result;
-        private static ConcurrentBag<DictionaryChunk> _chunks;
-        private static readonly List<UserInfo> _passwordList;
-
-        public static List<UserInfo> PasswordList
-        {
-            get { return _passwordList; }
-        }
-
-        public static ConcurrentBag<DictionaryChunk> Chunks
-        {
-            get { return _chunks; }
-            private set { _chunks = value; }
-        }
-
-
+        private static readonly ILog Log;
+        private const int ChunkSize = 30000;
+        private const string PasswordFilePath = "C:/temp/passwords.txt";
+        private const string DictionaryFilePath = "C:/temp/webster-dictionary.txt";
+        private static readonly ConcurrentBag<List<string>> Chunks;
+        private static readonly List<UserInfo> PasswordList;
 
         static Cracker()
+
         {
-            log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-            _passwordList = PasswordFileHandler.ReadPasswordFile("passwords.txt");
+            Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+            PasswordList = PasswordFileHandler.ReadPasswordFile(PasswordFilePath);
             List<string> wholeDictionary = new List<string>();
-            using (FileStream fs = new FileStream("C:/temp/webster-dictionary.txt", FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(DictionaryFilePath, FileMode.Open, FileAccess.Read))
             using (StreamReader dictionary = new StreamReader(fs))
             {
                 while (!dictionary.EndOfStream)
@@ -52,79 +40,63 @@ namespace PasswordCrackerService
                     wholeDictionary.Add(dictionary.ReadLine());
                 }
             }
-            Chunks = new ConcurrentBag<DictionaryChunk>();
-            Chunks = Batch(Chunks, wholeDictionary, 30000);
-
-
-//            var partitions = Partitioner.Create(0, wholeDictionary.Count);
-//            Parallel.ForEach(partitions, range =>
-//            {
-//                DictionaryChunk newChunk = new DictionaryChunk();
-//                newChunk.Processed = false;
-//                for (int i = range.Item1; i < range.Item2; ++i)
-//                {
-//                    newChunk.Words.Add(wholeDictionary[i]);
-//                }
-//                Chunks.Add(newChunk);
-//            });
+            Chunks = new ConcurrentBag<List<string>>();
+            Chunks = Batch(Chunks, wholeDictionary, ChunkSize);
         }
 
-        public static ConcurrentBag<DictionaryChunk> Batch(ConcurrentBag<DictionaryChunk> result, List<string> collection, int batchSize)
+        public static ConcurrentBag<List<string>> Batch(ConcurrentBag<List<string>> result, List<string> collection, int batchSize)
         {
-            DictionaryChunk nextChunk = new DictionaryChunk(batchSize);
+            List<string> nextChunk = new List<string>(batchSize);
             foreach (string item in collection)
             {
-                nextChunk.Words.Add(item);
-                if (nextChunk.Words.Count == batchSize)
+                nextChunk.Add(item);
+                if (nextChunk.Count == batchSize)
                 {
                     result.Add(nextChunk);
-                    nextChunk = new DictionaryChunk(batchSize);
+                    nextChunk = new List<string>(batchSize);
                 }
             }
-            if (nextChunk.Words.Count > 0)
+            if (nextChunk.Count > 0)
                 result.Add(nextChunk);
             return result;
-        }
-
-        public List<UserInfoClearText> Result
-        {
-            get { return _result; }
         }
 
         [WebMethod]
         public List<UserInfo> GetPasswordList()
         {
-            List<UserInfo> userInfos = PasswordFileHandler.ReadPasswordFile("C:/temp/passwords.txt");
-            return userInfos;
+            return PasswordList;
         }
 
         [WebMethod]
-        public void SendResults(UserInfoClearText result)
+        public List<string> GetDictionaryChunk()
         {
-            Result.Add(result);
-        }
-
-        [WebMethod]
-        public DictionaryChunk GetDictionaryChunk()
-        {
-            DictionaryChunk chunk;
+            List<string> chunk;
             if (Chunks.TryTake(out chunk))
             {
-                log.Info("Got a chunk. Wordcount: " + chunk.Words.Count + "First Word: " + chunk.Words[0] + " Last word: " + chunk.Words[chunk.Words.Count - 1] + ".");
+                Log.Info("Sent a chunk. Wordcount: " + chunk.Count + "First Word: " + chunk[0] +
+                         " Last word: " + chunk[chunk.Count - 1] + ".");
                 return chunk;
             }
-            log.Info("Got null.");
+            Log.Info("Got null.");
             return null;
         }
 
         [WebMethod]
         public void LogIt()
         {
-            foreach (DictionaryChunk dictionaryChunk in Chunks)
+            foreach (List<string> dictionaryChunk in Chunks)
             {
-                log.Info("Count: " + dictionaryChunk.Words.Count + " Last: " + dictionaryChunk.Words[dictionaryChunk.Words.Count - 1] + ".");
+                Log.Info("Count: " + dictionaryChunk.Count + " Last: " + dictionaryChunk[dictionaryChunk.Count - 1] + ".");
             }
         }
-        
+
+        [WebMethod]
+        public void LogResults(List<UserInfoClearText> result)
+        {
+            foreach (var item in result)
+            {
+                Log.Info(item);
+            }
+        }
     }
 }
