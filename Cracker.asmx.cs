@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.ServiceModel;
 using System.Web.Services;
+using System.Web.Services.Protocols;
 using log4net;
 using PasswordCrackerService.model;
 using PasswordCrackerService.util;
@@ -13,14 +14,15 @@ namespace PasswordCrackerService
     /// <summary>
     /// A password cracking webservice that uses a dictionary and common variations
     /// </summary>
-    [WebService(Namespace = "http://localhost:65080")]
+    [WebService(Namespace = "http://www.tempuri.org")]
     [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
     [System.ComponentModel.ToolboxItem(false)]
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Single)]
+    [SoapDocumentService(RoutingStyle = SoapServiceRoutingStyle.RequestElement)]
     public class Cracker : WebService
     {
         private static readonly ILog Log;
-        private const int ChunkSize = 30000;
+        private const int ChunkSize = 10000;
         private const string PasswordFilePath = "C:/temp/passwords.txt";
         private const string DictionaryFilePath = "C:/temp/webster-dictionary.txt";
         private static readonly ConcurrentBag<List<string>> Chunks;
@@ -73,11 +75,11 @@ namespace PasswordCrackerService
             List<string> chunk;
             if (Chunks.TryTake(out chunk))
             {
-                Log.Info("Sent a chunk. Wordcount: " + chunk.Count + "First Word: " + chunk[0] +
-                         " Last word: " + chunk[chunk.Count - 1] + ".");
+//                Log.Info("Sent a chunk. Wordcount: " + chunk.Count + "First Word: " + chunk[0] +
+//                         " Last word: " + chunk[chunk.Count - 1] + ".");
                 return chunk;
             }
-            Log.Info("Got null.");
+//            Log.Info("Got null.");
             return null;
         }
 
