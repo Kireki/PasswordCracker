@@ -28,6 +28,10 @@ namespace PasswordCrackerService
         private static readonly ConcurrentBag<List<string>> Chunks;
         private static readonly List<UserInfo> PasswordList;
 
+        /// <summary>
+        /// A constructor that initializes all the required variables.
+        /// A static constructor and the "ServiceBehavior" tag ensure that there is only one instance of the object.
+        /// </summary>
         static Cracker()
 
         {
@@ -46,6 +50,13 @@ namespace PasswordCrackerService
             Chunks = Batch(Chunks, wholeDictionary, ChunkSize);
         }
 
+        /// <summary>
+        /// Batches the dictionary into chunks.
+        /// </summary>
+        /// <param name="result">The container to be filled up with chunks.</param>
+        /// <param name="collection">The whole dictionary.</param>
+        /// <param name="batchSize">The size of a single batch.</param>
+        /// <returns>The "result" argument.</returns>
         public static ConcurrentBag<List<string>> Batch(ConcurrentBag<List<string>> result, List<string> collection, int batchSize)
         {
             List<string> nextChunk = new List<string>(batchSize);
@@ -63,27 +74,35 @@ namespace PasswordCrackerService
             return result;
         }
 
-        [WebMethod]
+        /// <summary>
+        /// Gets the list of usernames and passwords.
+        /// </summary>
+        /// <returns>The PasswordList property of the class.</returns>
+        [WebMethod(Description = "Get the list of usernames and encrypted passwords.")]
         public List<UserInfo> GetPasswordList()
         {
             return PasswordList;
         }
 
-        [WebMethod]
+        /// <summary>
+        /// Gets a single dictionary chunk from the container, removes it and sends it to client.
+        /// </summary>
+        /// <returns>A chunk of a dictionary.</returns>
+        [WebMethod(Description = "Gets a single dictionary chunk from the container, removes it and sends it to client.")]
         public List<string> GetDictionaryChunk()
         {
             List<string> chunk;
             if (Chunks.TryTake(out chunk))
             {
-//                Log.Info("Sent a chunk. Wordcount: " + chunk.Count + "First Word: " + chunk[0] +
-//                         " Last word: " + chunk[chunk.Count - 1] + ".");
                 return chunk;
             }
-//            Log.Info("Got null.");
             return null;
         }
 
-        [WebMethod]
+        /// <summary>
+        /// Logs the chunks inside the container for debugging purposes.
+        /// </summary>
+        [WebMethod(Description = "Logs the chunks inside the container for debugging purposes.")]
         public void LogIt()
         {
             foreach (List<string> dictionaryChunk in Chunks)
@@ -92,7 +111,11 @@ namespace PasswordCrackerService
             }
         }
 
-        [WebMethod]
+        /// <summary>
+        /// Logs the username and password received from client in clear text.
+        /// </summary>
+        /// <param name="result">Usernames and decrypted passwords.</param>
+        [WebMethod(Description = "Logs the username and password received from client in clear text.")]
         public void LogResults(List<UserInfoClearText> result)
         {
             foreach (var item in result)
