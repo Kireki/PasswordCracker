@@ -22,7 +22,7 @@ namespace PasswordCrackerService
     public class Cracker : WebService
     {
         private static readonly ILog Log;
-        private const int ChunkSize = 10000;
+        private const int ChunkSize = 5000;
         private const string PasswordFilePath = "C:/temp/passwords.txt";
         private const string DictionaryFilePath = "C:/temp/webster-dictionary.txt";
         private static readonly ConcurrentBag<List<string>> Chunks;
