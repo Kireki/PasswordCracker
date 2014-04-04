@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Policy;
 using System.ServiceModel;
 using System.Web.Services;
@@ -25,8 +26,9 @@ namespace PasswordCrackerService
     {
         private static readonly ILog Log;
         private const int ChunkSize = 5000;
-        private const string PasswordFilePath = "C:/temp/passwords.txt";
-        private const string DictionaryFilePath = "C:/temp/webster-dictionary-reduced.txt"; //using reduced for faster local testing
+        private const string PasswordFile = "PasswordCrackerService.passwords.txt";
+//        private const string DictionaryFile = "PasswordCrackerService.webster-dictionary.txt";
+        private const string DictionaryFile = "PasswordCrackerService.webster-dictionary-reduced.txt"; //using reduced for faster local testing
 
         private static readonly ConcurrentBag<List<string>> Chunks;
         private static readonly List<UserInfo> PasswordList;
@@ -35,19 +37,26 @@ namespace PasswordCrackerService
         /// A constructor that initializes all the required variables.
         /// A static constructor and the "ServiceBehavior" tag ensure that there is only one instance of the object.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         static Cracker()
 
         {
             Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-            PasswordList = PasswordFileHandler.ReadPasswordFile(PasswordFilePath);
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            PasswordList = PasswordFileHandler.ReadPasswordFile(PasswordFile);
             List<string> wholeDictionary = new List<string>();
-            using (FileStream fs = new FileStream(DictionaryFilePath, FileMode.Open, FileAccess.Read))
-            using (StreamReader dictionary = new StreamReader(fs))
-            {
-                while (!dictionary.EndOfStream)
+            Stream dictStream = assembly.GetManifestResourceStream(DictionaryFile);
+            if (dictStream != null)
+                using (StreamReader dictionary = new StreamReader(dictStream))
                 {
-                    wholeDictionary.Add(dictionary.ReadLine());
+                    while (!dictionary.EndOfStream)
+                    {
+                        wholeDictionary.Add(dictionary.ReadLine());
+                    }
                 }
+            else
+            {
+                throw new ArgumentNullException("Dictionary is null.");
             }
             Chunks = new ConcurrentBag<List<string>>();
             Chunks = Batch(Chunks, wholeDictionary, ChunkSize);

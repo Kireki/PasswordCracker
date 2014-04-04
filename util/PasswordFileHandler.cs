@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using PasswordCrackerService.model;
 
@@ -44,23 +45,26 @@ namespace PasswordCrackerService.util
         /// <returns>A list of (username, encrypted password) pairs</returns>
         public static List<UserInfo> ReadPasswordFile(String filename)
         {
+            Assembly assembly = Assembly.GetExecutingAssembly();
             List<UserInfo> result = new List<UserInfo>();
-            FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read);
-            using (StreamReader sr = new StreamReader(fs))
-            {
-
-                while (!sr.EndOfStream)
+            Stream passwordStream = assembly.GetManifestResourceStream(filename);
+            if (passwordStream != null)
+                using (StreamReader sr = new StreamReader(passwordStream))
                 {
-                    String line = sr.ReadLine();
-                    if (line != null)
+
+                    while (!sr.EndOfStream)
                     {
-                        String[] parts = line.Split(":".ToCharArray());
-                        UserInfo userInfo = new UserInfo(parts[0], parts[1]);
-                        result.Add(userInfo);
+                        String line = sr.ReadLine();
+                        if (line != null)
+                        {
+                            String[] parts = line.Split(":".ToCharArray());
+                            UserInfo userInfo = new UserInfo(parts[0], parts[1]);
+                            result.Add(userInfo);
+                        }
                     }
+                    return result;
                 }
-                return result;
-            }
+            return null;
         }
 
         public static Converter<char, byte> GetConverter()
