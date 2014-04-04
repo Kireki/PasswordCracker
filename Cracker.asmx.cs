@@ -1,7 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Security.Policy;
 using System.ServiceModel;
 using System.Web.Services;
 using System.Web.Services.Protocols;
@@ -24,7 +26,8 @@ namespace PasswordCrackerService
         private static readonly ILog Log;
         private const int ChunkSize = 5000;
         private const string PasswordFilePath = "C:/temp/passwords.txt";
-        private const string DictionaryFilePath = "C:/temp/webster-dictionary.txt";
+        private const string DictionaryFilePath = "C:/temp/webster-dictionary-reduced.txt"; //using reduced for faster local testing
+
         private static readonly ConcurrentBag<List<string>> Chunks;
         private static readonly List<UserInfo> PasswordList;
 
