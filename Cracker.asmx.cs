@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Policy;
 using System.ServiceModel;
 using System.Web.Services;
 using System.Web.Services.Protocols;
@@ -56,7 +54,7 @@ namespace PasswordCrackerService
                 }
             else
             {
-                throw new ArgumentNullException("Dictionary is null.");
+                throw new ArgumentNullException("Dictionary" + " is null.");
             }
             Chunks = new ConcurrentBag<List<string>>();
             Chunks = Batch(Chunks, wholeDictionary, ChunkSize);
