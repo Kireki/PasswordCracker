@@ -14,7 +14,7 @@ namespace PasswordCrackerService.model
         public String Username { get; set; }
         public String EncryptedPasswordBase64 { get; set; }
         public byte[] EncryptedPassword { get; set; }
-
+        public bool IsDecrypted;
         public UserInfo()
         {
             

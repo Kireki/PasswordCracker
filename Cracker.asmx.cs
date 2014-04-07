@@ -25,10 +25,10 @@ namespace PasswordCrackerService
         private static readonly ILog Log;
         private const int ChunkSize = 5000;
         private const string PasswordFile = "PasswordCrackerService.passwords.txt";
-//        private const string DictionaryFile = "PasswordCrackerService.webster-dictionary.txt";
-        private const string DictionaryFile = "PasswordCrackerService.webster-dictionary-reduced.txt"; //using reduced for faster local testing
+        private const string DictionaryFile = "PasswordCrackerService.webster-dictionary.txt";
+//        private const string DictionaryFile = "PasswordCrackerService.webster-dictionary-reduced.txt"; //using reduced for faster local testing
 
-        private static readonly ConcurrentBag<List<string>> Chunks;
+        private static ConcurrentBag<List<string>> _chunks;
         private static readonly List<UserInfo> PasswordList;
 
         /// <summary>
@@ -56,8 +56,8 @@ namespace PasswordCrackerService
             {
                 throw new ArgumentNullException("Dictionary" + " is null.");
             }
-            Chunks = new ConcurrentBag<List<string>>();
-            Chunks = Batch(Chunks, wholeDictionary, ChunkSize);
+            _chunks = new ConcurrentBag<List<string>>();
+            _chunks = Batch(_chunks, wholeDictionary, ChunkSize);
         }
 
         /// <summary>
@@ -91,7 +91,15 @@ namespace PasswordCrackerService
         [WebMethod(Description = "Get the list of usernames and encrypted passwords.")]
         public List<UserInfo> GetPasswordList()
         {
-            return PasswordList;
+            List<UserInfo> result = new List<UserInfo>();
+            foreach (var item in PasswordList)
+            {
+                if (!item.IsDecrypted)
+                {
+                    result.Add(item);
+                }
+            }
+            return result;
         }
 
         /// <summary>
@@ -102,7 +110,7 @@ namespace PasswordCrackerService
         public List<string> GetDictionaryChunk()
         {
             List<string> chunk;
-            if (Chunks.TryTake(out chunk))
+            if (_chunks.TryTake(out chunk))
             {
                 return chunk;
             }
@@ -115,7 +123,7 @@ namespace PasswordCrackerService
         [WebMethod(Description = "Logs the chunks inside the container for debugging purposes.")]
         public void LogIt()
         {
-            foreach (List<string> dictionaryChunk in Chunks)
+            foreach (List<string> dictionaryChunk in _chunks)
             {
                 Log.Info("Count: " + dictionaryChunk.Count + " Last: " + dictionaryChunk[dictionaryChunk.Count - 1] + ".");
             }
@@ -131,6 +139,46 @@ namespace PasswordCrackerService
             foreach (var item in result)
             {
                 Log.Info(item);
+            }
+        }
+
+        [WebMethod(Description = "Temporary method for resetting the dictionary chunks")]
+        public void Reset()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            List<string> wholeDictionary = new List<string>();
+            Stream dictStream = assembly.GetManifestResourceStream(DictionaryFile);
+            if (dictStream != null)
+                using (StreamReader dictionary = new StreamReader(dictStream))
+                {
+                    while (!dictionary.EndOfStream)
+                    {
+                        wholeDictionary.Add(dictionary.ReadLine());
+                    }
+                }
+            else
+            {
+                throw new ArgumentNullException("Dictionary" + " is null.");
+            }
+            _chunks = new ConcurrentBag<List<string>>();
+            _chunks = Batch(_chunks, wholeDictionary, ChunkSize);
+            foreach (var item in PasswordList)
+            {
+                item.IsDecrypted = false;
+            }
+        }
+
+        [WebMethod(Description = "Tells that the specific userInfo was decripted")]
+        public void Decrypted(string name)
+        {
+            if (name == null)
+                return;
+            foreach (var userInfo in PasswordList)
+            {
+                if (name == userInfo.Username)
+                {
+                    userInfo.IsDecrypted = true;
+                }
             }
         }
     }
